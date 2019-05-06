@@ -43,6 +43,28 @@ struct RegBit {
 
 
 namespace CPU {
+    template<bool write>
+    u8 MemAccess(u16 addr, u8 v = 0);
+
+    u8 RB(u16 addr) {
+        return MemAccess<0>(addr);
+    }
+
+    u8 WB(u16 addr, u8 v) {
+        return MemAccess<1>(addr, v);
+    }
+
+    void tick() {
+
+    }
+
+    template<bool write>
+    u8 MemAccess(u16 addr, u8 v) {
+        tick();
+        return 0;
+    }
+
+
     // CPU registers
     u16 PC = 0xC000;
     u8 A = 0, X = 0, Y = 0, S = 0;
@@ -50,8 +72,40 @@ namespace CPU {
     // status flags
     union {
         u8 raw;
-        RegBit<0> C;
+        RegBit<0> C; //carry
+        RegBit<1> Z; //zero
+        RegBit<2> I; //interrupt enable/disable
+        RegBit<3> D; //decimal mode (unsupported on NES, but flag exist)
+//        RegBit<4> C; (0x10, 0x20) don't exist
+//        RegBit<5> C;
+        RegBit<6> V; //overflow
+        RegBit<7> N; //negative
     } P;
 
+    void Misfire(u16 old, u16 addr) {
+
+    }
+
+    u8 Pop() {
+        return RB(0x100 | u8(++S));
+    }
+
+
+    void Op() {
+        unsigned op = RB(PC++);
+
+
+        //define function pointers for each opcode (00..FF) and each interrupt (100,101,102)
+#define c(n) Ins<0x##n>, Ins<0x##n+1>,
+#define o(n) c(n)c(n+2)c(n+4)c(n+6)
+        static void (*const i[0x108])() =
+                {
+                        o(00) o(08) o(10) o(18) o(20) o(28) o(30) o(38)
+                };
+#undef o
+#undef c
+        i[op]();
+
+    }
 }
 
