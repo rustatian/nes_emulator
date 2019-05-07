@@ -41,6 +41,18 @@ struct RegBit {
     }
 };
 
+namespace IO {
+    void Init() {
+
+    }
+}
+
+namespace GamePack {
+    std::vector<u8> ROM, VRAM(0x200);
+    unsigned mappernum;
+
+}
+
 
 namespace CPU {
     u8 RAM[0x800];
@@ -130,22 +142,29 @@ namespace CPU {
         t("zy}z{y}zzy}zzy}zzy}zzy}zzy}zzy}z ", addr = RB(PC++))
         t("2 yy2 yy2 yy2 yy2 XX2 XX2 yy2 yy ", d = X) // register index
         t("  62  62  62  62  om  om  62  62 ", d = Y)
-        t("2 y 2 y 2 y 2 y 2 y 2 y 2 y 2 y  ", addr=u8(addr+d); d=0; tick())              // add zeropage-index
-        t(" y z!y z y z y z y z y z y z y z ", addr=u8(addr);   addr+=256*RB(PC++))       // absolute address
-        t("3 6 2 6 2 6 286 2 6 2 6 2 6 2 6 /", addr=RB(c=addr); addr+=256*RB(wrap(c,c+1)))// indirect w/ page wrap
-        t("  *Z  *Z  *Z  *Z      6z  *Z  *Z ", Misfire(addr, addr+d)) // abs. load: extra misread when cross-page
-        t("  4k  4k  4k  4k  6z      4k  4k ", RB(wrap(addr, addr+d)))// abs. store: always issue a misread
+        t("2 y 2 y 2 y 2 y 2 y 2 y 2 y 2 y  ", addr = u8(addr + d);
+                d = 0;
+                tick())              // add zeropage-index
+        t(" y z!y z y z y z y z y z y z y z ", addr = u8(addr);
+                addr += 256 * RB(PC++))       // absolute address
+        t("3 6 2 6 2 6 286 2 6 2 6 2 6 2 6 /", addr = RB(c = addr);
+                addr += 256 * RB(wrap(c, c + 1)))// indirect w/ page wrap
+        t("  *Z  *Z  *Z  *Z      6z  *Z  *Z ", Misfire(addr, addr + d)) // abs. load: extra misread when cross-page
+        t("  4k  4k  4k  4k  6z      4k  4k ", RB(wrap(addr, addr + d)))// abs. store: always issue a misread
         /* Load source operand */
         t("aa__ff__ab__,4  ____ -  ____     ", t &= A) // Many operations take A or X as operand. Some try in
         t("                knnn     4  99   ", t &= X) // error to take both; the outcome is an AND operation.
         t("                9989    99       ", t &= Y) // sty,dey,iny,tya,cpy
         t("                       4         ", t &= S) // tsx, las
-        t("!!!!  !!  !!  !!  !   !!  !!  !!/", t &= P.raw|pbits; c = t)// php, flag test/set/clear, interrupts
-        t("_^__dc___^__            ed__98   ", c = t; t = 0xFF)        // save as second operand
-        t("vuwvzywvvuwvvuwv    zy|zzywvzywv ", t &= RB(addr+d)) // memory operand
+        t("!!!!  !!  !!  !!  !   !!  !!  !!/", t &= P.raw | pbits;
+                c = t)// php, flag test/set/clear, interrupts
+        t("_^__dc___^__            ed__98   ", c = t;
+                t = 0xFF)        // save as second operand
+        t("vuwvzywvvuwvvuwv    zy|zzywvzywv ", t &= RB(addr + d)) // memory operand
         t(",2  ,2  ,2  ,2  -2  -2  -2  -2   ", t &= RB(PC++))   // immediate operand
         /* Operations that mogrify memory operands directly */
-        t("    88                           ", P.V = t & 0x40; P.N = t & 0x80) // bit
+        t("    88                           ", P.V = t & 0x40;
+                P.N = t & 0x80) // bit
         t("    nink    nnnk                 ", sb = P.C)       // rol,rla, ror,rra,arr
         t("nnnknnnk     0                   ", P.C = t & 0x80) // rol,rla, asl,slo,[arr,anc]
         t("        nnnknink                 ", P.C = t & 0x01) // lsr,sre, ror,rra,asr
@@ -154,15 +173,20 @@ namespace CPU {
         t("                 !      kink     ", t = u8(t - 1))  // dec,dex,dey,dcp
         t("                         !  khnk ", t = u8(t + 1))  // inc,inx,iny,isb
         /* Store modified value (memory) */
-        t("kgnkkgnkkgnkkgnkzy|J    kgnkkgnk ", WB(addr+d, t))
-        t("                   q             ", WB(wrap(addr, addr+d), t &= ((addr+d) >> 8))) // [shx,shy,shs,sha?]
+        t("kgnkkgnkkgnkkgnkzy|J    kgnkkgnk ", WB(addr + d, t))
+        t("                   q             ", WB(wrap(addr, addr + d), t &= ((addr + d) >> 8))) // [shx,shy,shs,sha?]
         /* Some operations used up one clock cycle that we did not account for yet */
         t("rpstljstqjstrjst - - - -kjstkjst/", tick()) // nop,flag ops,inc,dec,shifts,stack,transregister,interrupts
         /* Stack operations and unconditional jumps */
-        t("     !  !    !                   ", tick(); t = Pop())                        // pla,plp,rti
-        t("        !   !                    ", RB(PC++); PC = Pop(); PC |= (Pop() << 8)) // rti,rts
+        t("     !  !    !                   ", tick();
+                t = Pop())                        // pla,plp,rti
+        t("        !   !                    ", RB(PC++);
+                PC = Pop();
+                PC |= (Pop() << 8)) // rti,rts
         t("            !                    ", RB(PC++))  // rts
-        t("!   !                           /", d=PC+(op?-1:1); Push(d>>8); Push(d))      // jsr, interrupts
+        t("!   !                           /", d = PC + (op ? -1 : 1);
+                Push(d >> 8);
+                Push(d))      // jsr, interrupts
         t("!   !    8   8                  /", PC = addr) // jmp, jsr, interrupts
         t("!!       !                      /", Push(t))   // pha, php, interrupts
         /* Bitmasks */
@@ -175,11 +199,23 @@ namespace CPU {
         t("  !!dc`_  !!  !   !   !!  !!  !  ", t = c & t)  // and, bit, rla, clear/test flag
         t("        _^__                     ", t = c ^ t)  // eor, sre
         /* Conditional branches */
-        t("      !       !       !       !  ", if(t)  { tick(); Misfire(PC, addr = s8(addr) + PC); PC=addr; })
-        t("  !       !       !       !      ", if(!t) { tick(); Misfire(PC, addr = s8(addr) + PC); PC=addr; })
+        t("      !       !       !       !  ", if (t) {
+            tick();
+            Misfire(PC, addr = s8(addr) + PC);
+            PC = addr;
+        })
+        t("  !       !       !       !      ", if (!t) {
+            tick();
+            Misfire(PC, addr = s8(addr) + PC);
+            PC = addr;
+        })
         /* Addition and subtraction */
-        t("            _^__            ____ ", c = t; t += A + P.C; P.V = (c^t) & (A^t) & 0x80; P.C = t & 0x100)
-        t("                        ed__98   ", t = c - t; P.C = ~t & 0x100) // cmp,cpx,cpy, dcp, sbx
+        t("            _^__            ____ ", c = t;
+                t += A + P.C;
+                P.V = (c ^ t) & (A ^ t) & 0x80;
+                P.C = t & 0x100)
+        t("                        ed__98   ", t = c - t;
+                P.C = ~t & 0x100) // cmp,cpx,cpy, dcp, sbx
         /* Store modified value (register) */
         t("aa__aa__aa__ab__ 4 !____    ____ ", A = t)
         t("                    nnnn 4   !   ", X = t) // ldx, dex, tax, inx, tsx,lax,las,sbx
@@ -189,7 +225,7 @@ namespace CPU {
         /* Generic status flag updates */
         t("wwwvwwwvwwwvwxwv 5 !}}||{}wv{{wv ", P.N = t & 0x80)
         t("wwwv||wvwwwvwxwv 5 !}}||{}wv{{wv ", P.Z = u8(t) == 0)
-        t("             0                   ", P.V = (((t >> 5)+1)&2))         // [arr]
+        t("             0                   ", P.V = (((t >> 5) + 1) & 2))         // [arr]
         /* All implemented opcodes are cycle-accurate and memory-access-accurate.
          * [] means that this particular separate rule exists only to provide the indicated unofficial opcode(s).
          */
@@ -230,4 +266,87 @@ namespace CPU {
         reset = false;
     }
 }
+
+int main(int, char **argv) {
+    FILE *fp = fopen(argv[1], "rb");
+
+    // Verify ROM file header. First four bytes should be "NES\x1A"
+    assert(fgetc(fp) == 'N' && fgetc(fp) == 'E' && fgetc(fp) == 'S' && fgetc(fp) == '\32');
+
+    // Reads the count of 16KiB blocks of game data
+    u8 rom16count = fgetc(fp);
+
+    // Reads the count of 8KiB blocks of video data
+    u8 vrom8count = fgetc(fp);
+
+    // Reads byte of ROM flags, including half of the mapper number
+    u8 ctrlbyte = fgetc(fp);
+
+    // Reads more flags including the other half of the mapper number, which
+    // is shifted and OR'd with the previous read to construct the entire mapper number.
+    u8 mappernum = fgetc(fp) | (ctrlbyte >> 4);
+
+    // Discards final 8 header bytes
+    fgetc(fp);
+    fgetc(fp);
+    fgetc(fp);
+    fgetc(fp);
+    fgetc(fp);
+    fgetc(fp);
+    fgetc(fp);
+    fgetc(fp);
+
+    // If the mapper number is over 63, then mask the first 4 bits and choose
+    // a mapper under 16
+    if (mappernum >= 0x40) {
+        mappernum &= 15;
+    }
+
+    // Save the mapper number in GamePak for later reference
+    GamePack::mappernum = mappernum;
+
+    // Read the ROM data
+    if(rom16count) GamePack::ROM.resize(rom16count * 0x4000);
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
