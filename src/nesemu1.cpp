@@ -90,6 +90,10 @@ namespace CPU {
         return RB(0x100 | u8(++S));
     }
 
+    template<u16 op>
+    void Ins() {
+
+    }
 
     void Op() {
         unsigned op = RB(PC++);
@@ -101,6 +105,9 @@ namespace CPU {
         static void (*const i[0x108])() =
                 {
                         o(00) o(08) o(10) o(18) o(20) o(28) o(30) o(38)
+                        o(40) o(48) o(50) o(58) o(60) o(68) o(70) o(78)
+                        o(80) o(88) o(90) o(98) o(A0) o(A8) o(B0) o(B8)
+                        o(C0) o(C8) o(D0) o(D8) o(E0) o(E8) o(F0) o(F8) o(100)
                 };
 #undef o
 #undef c
