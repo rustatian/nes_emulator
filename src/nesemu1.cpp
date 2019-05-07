@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <cmath>
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <vector>
 
 typedef uint_least32_t u32;
