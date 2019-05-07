@@ -51,8 +51,21 @@ namespace GamePack {
     std::vector<u8> ROM, VRAM(0x200);
     unsigned mappernum;
 
-}
+    const unsigned VROM_Granularity = 0x0400, VROM_Pages = 0x2000 / VROM_Granularity;
+    const unsigned ROM_Granularity = 0x2000, ROM_Pages = 0x10000 / VROM_Granularity;
 
+    unsigned char NRAM[0x1000], PRAM[0x2000];
+    unsigned char *banks[ROM_Pages] = {};
+    unsigned char *Vbanks[VROM_Pages] = {};
+    unsigned char *NTA[4] = {
+            NRAM + 0x0000, NRAM + 0x0400, NRAM + 0x0000, NRAM + 0x0400,
+    };
+
+    void Init() {
+
+    }
+
+}
 
 namespace CPU {
     u8 RAM[0x800];
@@ -69,6 +82,41 @@ namespace CPU {
     u8 WB(u16 addr, u8 v) {
         return MemAccess<1>(addr, v);
     }
+}
+
+namespace PPU { // Picture processing unit
+    union regtupe { //ppu register file
+        u32 value;
+        // Reg0 - write
+        RegBit<0,8,u32> sysctrl;
+        RegBit<0,2,u32> BaseNTA;
+        RegBit<2,1,u32> Inc;
+        RegBit<3,1,u32> SPaddr;
+        RegBit<4,1,u32> BGaddr;
+        RegBit<5,1,u32> SPsize;
+        RegBit<6,1,u32> SlaveFlag;
+        RegBit<7,1,u32> NMIenabled;
+
+        // Reg1 - write
+        RegBit<8,8,u32> dispctrl;
+        RegBit<8,1,u32> Grayscale;
+        RegBit<9,1,u32> ShowBG8;
+        RegBit<10,1,u32> ShowSP8;
+        RegBit<11,1,u32> ShowBG;
+        RegBit<12,1,u32> ShowSP;
+        RegBit<11,2,u32> ShowBGSP;
+        RegBit<13,3,u32> EmpRGB;
+
+
+
+
+    };
+
+}
+
+
+namespace CPU {
+
 
     void tick() {
         //PPU clock: 3 times per cpu rate
@@ -306,7 +354,7 @@ int main(int, char **argv) {
     GamePack::mappernum = mappernum;
 
     // Read the ROM data
-    if(rom16count) GamePack::ROM.resize(rom16count * 0x4000);
+    if (rom16count) GamePack::ROM.resize(rom16count * 0x4000);
 
 
 }
