@@ -43,6 +43,10 @@ struct RegBit {
 
 
 namespace CPU {
+    u8 RAM[0x800];
+    bool reset = true, nmi = false, nmi_edge_detected = false, intr = false;
+
+
     template<bool write>
     u8 MemAccess(u16 addr, u8 v = 0);
 
@@ -55,6 +59,15 @@ namespace CPU {
     }
 
     void tick() {
+        //PPU clock: 3 times per cpu rate
+        for (unsigned n = 0; n < 3; ++n) {
+            PPU::tick();
+        }
+
+        //APU clock: 1 times per cpu rate
+        for (unsigned n = 0; n < 1; ++n) {
+            APU::tick();
+        }
 
     }
 
@@ -82,21 +95,55 @@ namespace CPU {
         RegBit<7> N; //negative
     } P;
 
-    void Misfire(u16 old, u16 addr) {
+    u16 wrap(u16 oldaddr, u16 newaddr) {
+        return (oldaddr & 0xFF00) + u8(newaddr);
+    }
 
+    void Misfire(u16 old, u16 addr) {
+        u16 q = wrap(old, addr);
+        if (q != addr) {
+            RB(q);
+        }
     }
 
     u8 Pop() {
         return RB(0x100 | u8(++S));
     }
 
+    void Push(u8 v) {
+        WB(0x100 | u8(S--), v);
+    }
+
     template<u16 op>
     void Ins() {
+        unsigned addr = 0, d = 0, t = 0xFF, c = 0, sb = 0, pbits = op < 0x100 ? 0x30 : 0x20;
+        enum {
+            o8 = op / 8, o8m = 1 << (op % 8)
+        };
 
+#define t(s, code) {enum {
+
+    };}
+
+        t("                   ", addr = 0xFFFA)
     }
 
     void Op() {
+        //check the state of nmi flags
+        bool nmi_now = nmi;
         unsigned op = RB(PC++);
+
+        if (reset) {
+            op = 0x101;
+        } else if (nmi_now && !nmi_edge_detected) {
+            op = 0x100;
+            nmi_edge_detected = true;
+        } else if (intr && !P.I) {
+            op = 0x102;
+        }
+        if (!nmi_now) {
+            nmi_edge_detected = false;
+        }
 
 
         //define function pointers for each opcode (00..FF) and each interrupt (100,101,102)
@@ -113,6 +160,7 @@ namespace CPU {
 #undef c
         i[op]();
 
+        reset = false;
     }
 }
 
