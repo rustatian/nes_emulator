@@ -133,6 +133,22 @@ namespace PPU { // Picture processing unit
         u16 pattern;
     } OAM2[8], OAM3[8];
 
+    union scrolltype {
+        RegBit<3, 16, u32> raw; // raw vram address (16 bit)
+        RegBit<0, 8, u32> xscroll; // low 8 bit of first write to 2005
+        RegBit<0, 3, u32> xfine; // low 3 bits of fitse write to 2005
+        RegBit<3, 5, u32> xcoarse; // high 5 bits of first write to 2005
+        RegBit<8, 5, u32> ycoarse; // high 5 bits of second write to 2005
+        RegBit<13, 2, u32> basenta; // nametable index (copied from 2000)
+        RegBit<13, 1, u32> basenta_h; // horizontal nametable index
+        RegBit<14, 1, u32> basenta_v; // vertical nametable index
+        RegBit<15, 3, u32> yfine; // low 3 bits of second write to 2005
+        RegBit<11, 8, u32> vaddrhi; // first write to 2006 (with high 2 bits set to zero)
+        RegBit<3, 8, u32> vaddrlo; // second write to 2006
+    } scroll, vadr;
+
+
+
 
 
 }
