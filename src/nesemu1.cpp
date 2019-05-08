@@ -147,8 +147,58 @@ namespace PPU { // Picture processing unit
         RegBit<3, 8, u32> vaddrlo; // second write to 2006
     } scroll, vadr;
 
+    unsigned pat_addr, sprin_pos, sproutpos, sprrenpros, sprtmp;
+    u16 tileattr, tilepat, ioaddr;
+    u32 bg_shift_pat, bg_shift_attr;
 
+    int scanline = 241, x = 0, scanlineend = 341, VBlankState = 0, cycle_counter = 0;
+    int read_buffer = 0, open_bus = 0, open_bus_decay_timer = 0;
+    bool even_odd_toggle = false, offcet_toggle = false;
 
+    // memory mappings, converting PPU address into a reference to relevant data
+    u8 &mmap(int i) {
+
+    }
+
+    // External IO, read or write
+    u8 Access(u16 index, u8 v, bool write) {
+        // [&] c++ 11 lambdas
+        auto RefreshOpenBus = [&](u8 v) {
+            return open_bus_decay_timer = 77777, open_bus = v;
+        };
+
+        u8 res = open_bus;
+        if (write)
+            RefreshOpenBus(v);
+
+        switch (index) {
+            case 0:
+                if (write) {
+                    reg.sysctrl = v;
+                    scroll.basenta = reg.BaseNTA;
+                }
+                break;
+            case 1:
+                if (write) {
+                    reg.dispctrl = v;
+                }
+                break;
+            case 2:
+                if (write)
+                    break;
+
+                res = reg.status | (open_bus & 0x1F);
+                reg.InVBlank = false;
+                offcet_toggle = false;
+
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+        }
+    }
 
 
 }
