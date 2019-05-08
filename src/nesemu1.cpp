@@ -88,29 +88,52 @@ namespace PPU { // Picture processing unit
     union regtupe { //ppu register file
         u32 value;
         // Reg0 - write
-        RegBit<0,8,u32> sysctrl;
-        RegBit<0,2,u32> BaseNTA;
-        RegBit<2,1,u32> Inc;
-        RegBit<3,1,u32> SPaddr;
-        RegBit<4,1,u32> BGaddr;
-        RegBit<5,1,u32> SPsize;
-        RegBit<6,1,u32> SlaveFlag;
-        RegBit<7,1,u32> NMIenabled;
+        RegBit<0, 8, u32> sysctrl;
+        RegBit<0, 2, u32> BaseNTA;
+        RegBit<2, 1, u32> Inc;
+        RegBit<3, 1, u32> SPaddr;
+        RegBit<4, 1, u32> BGaddr;
+        RegBit<5, 1, u32> SPsize;
+        RegBit<6, 1, u32> SlaveFlag;
+        RegBit<7, 1, u32> NMIenabled;
 
         // Reg1 - write
-        RegBit<8,8,u32> dispctrl;
-        RegBit<8,1,u32> Grayscale;
-        RegBit<9,1,u32> ShowBG8;
-        RegBit<10,1,u32> ShowSP8;
-        RegBit<11,1,u32> ShowBG;
-        RegBit<12,1,u32> ShowSP;
-        RegBit<11,2,u32> ShowBGSP;
-        RegBit<13,3,u32> EmpRGB;
+        RegBit<8, 8, u32> dispctrl;
+        RegBit<8, 1, u32> Grayscale;
+        RegBit<9, 1, u32> ShowBG8;
+        RegBit<10, 1, u32> ShowSP8;
+        RegBit<11, 1, u32> ShowBG;
+        RegBit<12, 1, u32> ShowSP;
+        RegBit<11, 2, u32> ShowBGSP;
+        RegBit<13, 3, u32> EmpRGB;
+
+        // Reg2 - read
+        RegBit<16, 8, u32> status;
+        RegBit<21, 1, u32> Spowerflow;
+        RegBit<22, 1, u32> SP0hit;
+        RegBit<23, 1, u32> InVBlank;
+
+        // Reg3 - write
+        RegBit<24, 8, u32> OAMaddr;
+        RegBit<24, 2, u32> OAMdata;
+        RegBit<26, 6, u32> OAMindex;
+
+    } reg;
+
+    // raw memory data
+    u8 banks[2][0x1000], palette[32], OAM[256];
+
+    // decoded sprite information
+    struct {
+        u8 sprindex;
+        u8 y;
+        u8 index;
+        u8 x;
+        u8 attr;
+        u16 pattern;
+    } OAM2[8], OAM3[8];
 
 
-
-
-    };
 
 }
 
