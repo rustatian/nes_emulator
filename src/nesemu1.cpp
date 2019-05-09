@@ -145,7 +145,7 @@ namespace PPU { // Picture processing unit
         RegBit<15, 3, u32> yfine; // low 3 bits of second write to 2005
         RegBit<11, 8, u32> vaddrhi; // first write to 2006 (with high 2 bits set to zero)
         RegBit<3, 8, u32> vaddrlo; // second write to 2006
-    } scroll, vadr;
+    } scroll, vaddr;
 
     unsigned pat_addr, sprin_pos, sproutpos, sprrenpros, sprtmp;
     u16 tileattr, tilepat, ioaddr;
@@ -189,14 +189,55 @@ namespace PPU { // Picture processing unit
 
                 res = reg.status | (open_bus & 0x1F);
                 reg.InVBlank = false;
-                offcet_toggle = false;
-
+                offcet_toggle = false; // also resets the toggle for address updates
+                if (VBlankState != -5) {
+                    VBlankState = 0; // this also may cancel the setting of InVBlank
+                }
+                break;
             case 3:
+                if (write)
+                    // Index into Object Attribute memory TODO
+                    reg.OAMaddr = v;
+                break;
             case 4:
-            case 5:
-            case 6:
+                if (write) {
+                    OAM[reg.OAMaddr++] = v; // write or read OAM (sprites)
+                } else {
+                    res = RefreshOpenBus(OAM[reg.OAMaddr] & (reg.OAMdata == 2 ? 0xE3 : 0xFF));
+                }
+                break;
+            case 5: // set background scrolling offset
+                if (offcet_toggle) {
+                    scroll.yfine = v & 7;
+                    scroll.ycoarse = v >> 3;
+                } else {
+                    offcet_toggle = !offcet_toggle;
+                }
+                break;
+            case 6: // set video memory positions for read/write
+                if (!write)
+                    break;
+                if (offcet_toggle) {
+                    scroll.vaddrlo = v;
+                    scroll.raw = (unsigned) scroll.raw;
+                } else {
+                    scroll.vaddrhi = v & 0x3F;
+                }
+                offcet_toggle = !offcet_toggle;
+                break;
             case 7:
-            case 8:
+                res = read_buffer;
+                u8 &t = mmap(vaddr.raw); //access video memory
+                if (write) {
+                    res = t = v;
+                } else {
+                    if ((vaddr.raw & 0x3F00) == 0x3F00) //palette??
+                        res = read_buffer = (open_bus & 0xC0) | (t & 0x3F);
+                    read_buffer = t;
+                }
+                RefreshOpenBus(res);
+                vaddr.raw = vaddr.raw + (reg.Inc ? 32 : 1) // this address is auto updated
+                break;
         }
     }
 
