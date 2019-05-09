@@ -1,10 +1,15 @@
-#include "nesemu1.h"
+//#include "nes_emulator.h"
 #include <stdint.h>
 #include <signal.h>
 #include <assert.h>
 #include <cmath>
 
+#ifdef __APPLE__
 #include <SDL.h>
+#else
+#include <SDL/SDL.h>
+#endif
+
 #include <vector>
 
 typedef uint_least32_t u32;
