@@ -157,7 +157,19 @@ namespace PPU { // Picture processing unit
 
     // memory mappings, converting PPU address into a reference to relevant data
     u8 &mmap(int i) {
+        i &= 0x3FFF;
+        if (i > 0x3FF0) {
+            if (i % 4 == 0)
+                i &= 0x0F;
+            return palette[i & 0x1F];
+        }
 
+        if (i < 0x200) {
+            return GamePack::Vbanks[(i / GamePack::VROM_Granularity) % GamePack::VROM_Pages][i %
+                                                                                             GamePack::VROM_Granularity];
+        }
+
+        return GamePack::NTA[(i >> 10) & 3][i & 0x3FF];
     }
 
     // External IO, read or write
@@ -239,6 +251,10 @@ namespace PPU { // Picture processing unit
                 vaddr.raw = vaddr.raw + (reg.Inc ? 32 : 1) // this address is auto updated
                 break;
         }
+    }
+
+    void tick() {
+
     }
 
 

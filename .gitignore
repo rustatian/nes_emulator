@@ -33,3 +33,4 @@
 
 .idea/*
 cmake-build-debug
+src/cpu_simple_example.cpp
